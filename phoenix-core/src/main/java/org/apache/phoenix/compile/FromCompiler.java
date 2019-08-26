@@ -182,7 +182,7 @@ public class FromCompiler {
     	TableNode fromNode = statement.getFrom();
     	if (fromNode == null)
     	    return EMPTY_TABLE_RESOLVER;
-        if (fromNode instanceof NamedTableNode)
+        if (fromNode instanceof NamedTableNode)//创建 SingleTableColumnResolver 对象
             return new SingleTableColumnResolver(connection, (NamedTableNode) fromNode, true, 1, statement.getUdfParseNodes());
 
         MultiTableColumnResolver visitor = new MultiTableColumnResolver(connection, 1, statement.getUdfParseNodes());
@@ -280,7 +280,7 @@ public class FromCompiler {
         public SingleTableColumnResolver(PhoenixConnection connection, NamedTableNode tableNode,
                 boolean updateCacheImmediately, int tsAddition,
                 Map<String, UDFParseNode> udfParseNodes) throws SQLException {
-            super(connection, tsAddition, updateCacheImmediately, udfParseNodes);
+            super(connection, tsAddition, updateCacheImmediately, udfParseNodes); //调用父类方法
             alias = tableNode.getAlias();
             TableRef tableRef = createTableRef(tableNode, updateCacheImmediately);
             tableRefs = ImmutableList.of(tableRef);
@@ -386,13 +386,15 @@ public class FromCompiler {
 
         private BaseColumnResolver(PhoenixConnection connection, int tsAddition, boolean updateCacheImmediately, Map<String, UDFParseNode> udfParseNodes) throws SQLException {
         	this.connection = connection;
-            this.client = connection == null ? null : new MetaDataClient(connection);
+            this.client = connection == null ? null : new MetaDataClient(connection); //创建MetaDataClient
             this.tsAddition = tsAddition;
             functionMap = new HashMap<String, PFunction>(1);
             if (udfParseNodes.isEmpty()) {
                 functions = Collections.<PFunction> emptyList();
             } else {
+                // 这个就是Sql中查询用到的udf函数了
                 functions = createFunctionRef(new ArrayList<String>(udfParseNodes.keySet()), updateCacheImmediately);
+                // 然后判断一下缓存当中是否有函数对象，有就在本地缓存拿，否则就在client.updateCache(functionNames)进行远程查询
                 for (PFunction function : functions) {
                     functionMap.put(function.getFunctionName(), function);
                 }

@@ -263,7 +263,8 @@ public class PhoenixStatement implements Statement, SQLCloseable {
                     public PhoenixResultSet call() throws SQLException {
                     final long startTime = System.currentTimeMillis();
                     try {
-						QueryPlan plan = stmt.compilePlan(PhoenixStatement.this, Sequence.ValueOp.VALIDATE_SEQUENCE);
+                        // 执行compile过程。(识别limit、having、where、order、projector等操作，生成ScanPlan）
+						QueryPlan plan = stmt.compilePlan(PhoenixStatement.this, Sequence.ValueOp.VALIDATE_SEQUENCE); // 创建QueryCompiler
                         // Send mutations to hbase, so they are visible to subsequent reads.
                         // Use original plan for data table so that data and immutable indexes will be sent
                         // TODO: for joins, we need to iterate through all tables, but we need the original table,
@@ -389,6 +390,7 @@ public class PhoenixStatement implements Statement, SQLCloseable {
                 stmt.throwIfUnallowedUserDefinedFunctions(getUdfParseNodes());
             }
             SelectStatement select = SubselectRewriter.flatten(this, stmt.getConnection());
+            //  getResolverForQuery 中对sql的解释器，里面会创建 SingleTableColumnResolver 对象
             ColumnResolver resolver = FromCompiler.getResolverForQuery(select, stmt.getConnection());
             select = StatementNormalizer.normalize(select, resolver);
             SelectStatement transformedSelect = SubqueryRewriter.transform(select, resolver, stmt.getConnection());
@@ -1306,7 +1308,7 @@ public class PhoenixStatement implements Statement, SQLCloseable {
         if (logger.isDebugEnabled()) {
             logger.debug(LogUtil.addCustomAnnotations("Execute query: " + sql, connection));
         }
-        CompilableStatement stmt = parseStatement(sql);
+        CompilableStatement stmt = parseStatement(sql); // 将输入sql语句格式为select或者upsert statement.
         if (stmt.getOperation().isMutation()) {
             throw new ExecuteQueryNotApplicableException(sql);
         }
@@ -1336,7 +1338,7 @@ public class PhoenixStatement implements Statement, SQLCloseable {
     
     @Override
     public boolean execute(String sql) throws SQLException {
-        CompilableStatement stmt = parseStatement(sql);
+        CompilableStatement stmt = parseStatement(sql); //根据SQL创建QueryCompiler
         if (stmt.getOperation().isMutation()) {
             if (!batch.isEmpty()) {
                 throw new SQLExceptionInfo.Builder(SQLExceptionCode.EXECUTE_UPDATE_WITH_NON_EMPTY_BATCH)

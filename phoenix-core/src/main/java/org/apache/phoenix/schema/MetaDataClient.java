@@ -587,6 +587,7 @@ public class MetaDataClient {
             for(int i = 0; i< functionNames.size(); i++) {
                 functionsToFecth.add(new Pair<byte[], Long>(PVarchar.INSTANCE.toBytes(functionNames.get(i)), functionTimeStamps.get(i)));
             }
+            //当上面都找不到的情况，就调用如下方法
             result = connection.getQueryServices().getFunctions(tenantId, functionsToFecth, clientTimeStamp);
 
             MutationCode code = result.getMutationCode();
